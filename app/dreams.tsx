@@ -76,6 +76,8 @@ export default function DreamsScreen() {
         address: item.address ?? "",
         lat: item.lat != null ? String(item.lat) : "",
         lng: item.lng != null ? String(item.lng) : "",
+        // αν θες να περνάει και keyword όταν το κάνεις ανάμνηση:
+        keyword: item.keyword ?? "",
       },
     });
   };
@@ -90,18 +92,17 @@ export default function DreamsScreen() {
     }
   };
 
-  // Όλα τα διαθέσιμα keywords από τα dreams
+  // διαθέσιμα keywords
   const availableKeywords = useMemo(() => {
     const s = new Set<string>();
     dreams.forEach((d) => {
-      if (d.keyword && d.keyword.trim().length > 0) {
-        s.add(d.keyword.trim());
-      }
+      const k = d.keyword?.trim();
+      if (k) s.add(k);
     });
     return Array.from(s).sort((a, b) => a.localeCompare(b, "el"));
   }, [dreams]);
 
-  // Εφαρμογή keyword + search filters
+  // φίλτρα
   const filteredDreams = useMemo(() => {
     let list = dreams;
 
@@ -122,238 +123,236 @@ export default function DreamsScreen() {
     return list;
   }, [dreams, selectedKeyword, searchQuery]);
 
-  // Header
-  const Header = () => (
-    <View
-      style={{
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        backgroundColor: colors.accent,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <Pressable
-        onPress={() => router.back()}
-        style={{
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.2)",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>←</Text>
-      </Pressable>
-
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "800",
-          color: "#fff",
-          letterSpacing: 0.4,
-        }}
-        numberOfLines={1}
-      >
-        Τι ωραίο 🪣 list!
-      </Text>
-
-      <View style={{ width: 30 }} />
-    </View>
-  );
-
-  // Filter bar (keyword + search)
-  const FilterBar = () => (
-    <View
-      style={{
-        backgroundColor: colors.accent,
-        paddingHorizontal: 16,
-        paddingBottom: 8,
-      }}
-    >
-      {/* Keyword row */}
-      <View
-        style={{
-          borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.2)",
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ color: "#fff", marginRight: 6 }}>🏷️</Text>
-          <Text style={{ color: "#fff", fontSize: 13 }} numberOfLines={1}>
-            Keyword:
-            <Text style={{ fontWeight: "700" }}>
-              {" "}
-              {selectedKeyword ? `#${selectedKeyword}` : "Όλα"}
-            </Text>
-          </Text>
-        </View>
-
-        {availableKeywords.length > 0 && (
-          <Pressable
-            onPress={() => setKeywordMenuOpen((prev) => !prev)}
-            style={{
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 999,
-              backgroundColor: "rgba(255,255,255,0.9)",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "700",
-                color: colors.accentDark,
-              }}
-            >
-              Επιλογή
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* Dropdown με τα keywords */}
-      {keywordMenuOpen && availableKeywords.length > 0 && (
-        <View
-          style={{
-            marginTop: 6,
-            borderRadius: 14,
-            backgroundColor: colors.card,
-            paddingVertical: 4,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              setSelectedKeyword(null);
-              setKeywordMenuOpen(false);
-            }}
-            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                color: selectedKeyword ? colors.text : colors.accentDark,
-                fontWeight: selectedKeyword ? "400" : "700",
-              }}
-            >
-              Όλα τα keywords
-            </Text>
-          </Pressable>
-
-          {availableKeywords.map((key) => {
-            const active = key === selectedKeyword;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => {
-                  setSelectedKeyword(key);
-                  setKeywordMenuOpen(false);
-                }}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  backgroundColor: active ? "#ffe4ef" : "transparent",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: active ? colors.accentDark : colors.text,
-                    fontWeight: active ? "700" : "400",
-                  }}
-                >
-                  #{key}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      {/* Search bar */}
-      <View
-        style={{
-          marginTop: 8,
-          borderRadius: 999,
-          backgroundColor: "#fff",
-          paddingHorizontal: 12,
-          paddingVertical: 4,
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ marginRight: 6 }}>🔍</Text>
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Ψάξε με μέρος ή διεύθυνση..."
-          placeholderTextColor={colors.subtext}
-          style={{
-            flex: 1,
-            fontSize: 13,
-            color: colors.text,
-            paddingVertical: 4,
-          }}
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery("")}>
-            <Text style={{ fontSize: 16 }}>✕</Text>
-          </Pressable>
-        )}
-      </View>
-    </View>
-  );
-
-  // Loading state
-  if (loading) {
-    return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.accent }}
-        edges={["top", "left", "right"]}
-      >
-        <StatusBar style="light" backgroundColor={colors.accent} />
-        <Header />
-        <FilterBar />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colors.bg,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ActivityIndicator color={colors.accentDark} />
-          <Text style={{ marginTop: 8, color: colors.subtext }}>
-            Φόρτωση wishlist...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.accent }}
       edges={["top", "left", "right"]}
     >
       <StatusBar style="light" backgroundColor={colors.accent} />
-      <Header />
-      <FilterBar />
 
+      {/* HEADER (INLINE) */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: colors.accent,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 999,
+            backgroundColor: "rgba(255,255,255,0.2)",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>←</Text>
+        </Pressable>
+
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "800",
+            color: "#fff",
+            letterSpacing: 0.4,
+          }}
+          numberOfLines={1}
+        >
+          Τι ωραίο 🪣 list!
+        </Text>
+
+        <View style={{ width: 30 }} />
+      </View>
+
+      {/* FILTER BAR (INLINE, index-style search) */}
+      <View
+        style={{
+          backgroundColor: colors.accent,
+          paddingHorizontal: 16,
+          paddingBottom: 10,
+        }}
+      >
+        {/* Keyword row */}
+        <View
+          style={{
+            borderRadius: 999,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <Text style={{ color: "#fff", marginRight: 6 }}>🏷️</Text>
+            <Text style={{ color: "#fff", fontSize: 13 }} numberOfLines={1}>
+              Keyword:
+              <Text style={{ fontWeight: "800" }}>
+                {" "}
+                {selectedKeyword ? `#${selectedKeyword}` : "Όλα"}
+              </Text>
+            </Text>
+          </View>
+
+          {availableKeywords.length > 0 && (
+            <Pressable
+              onPress={() => setKeywordMenuOpen((prev) => !prev)}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.9)",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: colors.accentDark,
+                }}
+              >
+                Επιλογή
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Search bar (COPY style from index) */}
+        <View
+          style={{
+            marginTop: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#F9FAFB",
+            borderRadius: 999,
+            paddingHorizontal: 14,
+          }}
+        >
+          <Text style={{ marginRight: 8 }}>🔍</Text>
+
+          <TextInput
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              if (!text.trim()) {
+                setKeywordMenuOpen(false);
+              }
+            }}
+            onFocus={() => {
+              if (keywordMenuOpen) setKeywordMenuOpen(false);
+            }}
+            placeholder="Ψάξε με μέρος ή διεύθυνση..."
+            placeholderTextColor={colors.subtext}
+            style={{
+              flex: 1,
+              paddingVertical: 10,
+              fontSize: 14,
+              color: colors.text,
+            }}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+
+          {searchQuery.length > 0 && (
+            <Pressable
+              onPress={() => {
+                setSearchQuery("");
+                setKeywordMenuOpen(false);
+              }}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ fontSize: 16 }}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Dropdown keywords */}
+        {keywordMenuOpen && availableKeywords.length > 0 && (
+          <View
+            style={{
+              marginTop: 8,
+              borderRadius: 14,
+              backgroundColor: colors.card,
+              paddingVertical: 4,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                setSelectedKeyword(null);
+                setKeywordMenuOpen(false);
+              }}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: selectedKeyword ? colors.text : colors.accentDark,
+                  fontWeight: selectedKeyword ? "400" : "700",
+                }}
+              >
+                Όλα τα keywords
+              </Text>
+            </Pressable>
+
+            {availableKeywords.map((key) => {
+              const active = key === selectedKeyword;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => {
+                    setSelectedKeyword(key);
+                    setKeywordMenuOpen(false);
+                  }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: active ? "#ffe4ef" : "transparent",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: active ? colors.accentDark : colors.text,
+                      fontWeight: active ? "700" : "400",
+                    }}
+                  >
+                    #{key}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* BODY */}
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        {filteredDreams.length === 0 ? (
+        {loading ? (
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ActivityIndicator color={colors.accentDark} />
+            <Text style={{ marginTop: 8, color: colors.subtext }}>
+              Φόρτωση wishlist...
+            </Text>
+          </View>
+        ) : filteredDreams.length === 0 ? (
           <View
             style={{
               flex: 1,
@@ -374,6 +373,7 @@ export default function DreamsScreen() {
           <FlatList
             data={filteredDreams}
             keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={{
               padding: 16,
               paddingBottom: 40,
@@ -411,6 +411,7 @@ export default function DreamsScreen() {
                     >
                       {item.place_name || "Unknown place"}
                     </Text>
+
                     {!!item.address && (
                       <Text
                         style={{
@@ -425,29 +426,26 @@ export default function DreamsScreen() {
                     )}
                   </View>
 
-                  <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    
-                    {item.keyword && (
-                      <View
+                  {item.keyword && (
+                    <View
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: "#fce7f3",
+                      }}
+                    >
+                      <Text
                         style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 999,
-                          backgroundColor: "#fce7f3",
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: colors.accentDark,
                         }}
                       >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: "700",
-                            color: colors.accentDark,
-                          }}
-                        >
-                          #{item.keyword}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                        #{item.keyword}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View

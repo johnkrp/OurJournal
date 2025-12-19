@@ -1,7 +1,7 @@
 // app/my-posts.tsx
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -49,12 +49,8 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
   const scale = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
   };
-
   const handlePressOut = () => {
     Animated.spring(scale, {
       toValue: 1,
@@ -64,12 +60,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
   };
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ scale }],
-        marginBottom: 12,
-      }}
-    >
+    <Animated.View style={{ transform: [{ scale }], marginBottom: 12 }}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -90,12 +81,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
         {thumbUrl ? (
           <Image
             source={{ uri: thumbUrl }}
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 18,
-              marginRight: 10,
-            }}
+            style={{ width: 72, height: 72, borderRadius: 18, marginRight: 10 }}
           />
         ) : (
           <View
@@ -121,14 +107,9 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
               justifyContent: "space-between",
             }}
           >
-            {/* Τίτλος + τοποθεσία */}
             <View style={{ flex: 1, paddingRight: 6 }}>
               <Text
-                style={{
-                  fontWeight: "800",
-                  fontSize: 15,
-                  color: colors.text,
-                }}
+                style={{ fontWeight: "800", fontSize: 15, color: colors.text }}
                 numberOfLines={1}
               >
                 {post.title || post.place_name || "Untitled memory"}
@@ -136,11 +117,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
 
               {post.place_name && (
                 <Text
-                  style={{
-                    marginTop: 2,
-                    fontSize: 12,
-                    color: colors.subtext,
-                  }}
+                  style={{ marginTop: 2, fontSize: 12, color: colors.subtext }}
                   numberOfLines={1}
                 >
                   {post.place_name}
@@ -148,7 +125,6 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
               )}
             </View>
 
-            {/* Δεξιά: ημερομηνία + keyword */}
             <View style={{ alignItems: "flex-end", gap: 4 }}>
               {post.visited_at && (
                 <View
@@ -198,11 +174,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ post, onPress, thumbUrl }) => {
 
           {post.address && (
             <Text
-              style={{
-                marginTop: 4,
-                fontSize: 11,
-                color: colors.subtext,
-              }}
+              style={{ marginTop: 4, fontSize: 11, color: colors.subtext }}
               numberOfLines={1}
             >
               {post.address}
@@ -222,6 +194,8 @@ export default function MyPostsScreen() {
   // filters
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [keywordMenuOpen, setKeywordMenuOpen] = useState(false);
+
+  // ✅ EXACTLY like index: one state, no debounce, no extra wrapper component
   const [searchQuery, setSearchQuery] = useState("");
 
   const loadPosts = useCallback(async () => {
@@ -249,19 +223,16 @@ export default function MyPostsScreen() {
     }, [loadPosts])
   );
 
-  // keywords από αναμνήσεις
-  const availableKeywords = React.useMemo(() => {
+  const availableKeywords = useMemo(() => {
     const set = new Set<string>();
     posts.forEach((p) => {
-      if (p.keyword && p.keyword.trim().length > 0) {
-        set.add(p.keyword.trim());
-      }
+      const k = p.keyword?.trim();
+      if (k) set.add(k);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "el"));
   }, [posts]);
 
-  // εφαρμογή keyword + search φίλτρου
-  const filteredPosts = React.useMemo(() => {
+  const filteredPosts = useMemo(() => {
     let list = posts;
 
     if (selectedKeyword) {
@@ -281,302 +252,289 @@ export default function MyPostsScreen() {
     return list;
   }, [posts, selectedKeyword, searchQuery]);
 
-  // κοινό header
-  const Header = () => (
-    <View
-      style={{
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        backgroundColor: colors.accent,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <Pressable
-        onPress={() => router.back()}
-        style={{
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.2)",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>←</Text>
-      </Pressable>
-
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "800",
-          color: "#fff",
-          letterSpacing: 0.5,
-        }}
-        numberOfLines={1}
-      >
-        Κοίτα που έχουμε πάει! 😍
-      </Text>
-
-      <View style={{ width: 20 }} />
-    </View>
-  );
-
-  // bar με keyword + search
-  const KeywordFilterBar = () => (
-    <View
-      style={{
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 6,
-        backgroundColor: colors.accent,
-      }}
-    >
-      {/* γραμμή keyword */}
-      <View
-        style={{
-          borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.2)",
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ color: "#fff", marginRight: 6 }}>🏷️</Text>
-          <Text
-            style={{
-              color: "#fff",
-              fontSize: 13,
-            }}
-            numberOfLines={1}
-          >
-            Keyword:
-            <Text style={{ fontWeight: "700" }}>
-              {" "}
-              {selectedKeyword ? `#${selectedKeyword}` : "Όλα"}
-            </Text>
-          </Text>
-        </View>
-
-        {availableKeywords.length > 0 && (
-          <Pressable
-            onPress={() => setKeywordMenuOpen((prev) => !prev)}
-            style={{
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 999,
-              backgroundColor: "rgba(255,255,255,0.9)",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "700",
-                color: colors.accentDark,
-              }}
-            >
-              Επιλογή
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* search bar για τίτλο / μέρος */}
-      <View
-        style={{
-          marginTop: 8,
-          borderRadius: 999,
-          backgroundColor: "#fff",
-          paddingHorizontal: 12,
-          paddingVertical: 4,
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ marginRight: 6 }}>🔍</Text>
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onFocus={() => {
-            // όταν γράφεις, κλείσε το dropdown για να μη γίνεται μπάχαλο με focus
-            if (keywordMenuOpen) setKeywordMenuOpen(false);
-          }}
-          placeholder="Ψάξε με τίτλο ή μέρος..."
-          placeholderTextColor={colors.subtext}
-          style={{
-            flex: 1,
-            fontSize: 13,
-            color: colors.text,
-            paddingVertical: 4,
-          }}
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery("")}>
-            <Text style={{ fontSize: 16 }}>✕</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* dropdown keywords */}
-      {keywordMenuOpen && availableKeywords.length > 0 && (
-        <View
-          style={{
-            marginTop: 6,
-            borderRadius: 14,
-            backgroundColor: colors.card,
-            paddingVertical: 4,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              setSelectedKeyword(null);
-              setKeywordMenuOpen(false);
-            }}
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                color: selectedKeyword ? colors.text : colors.accentDark,
-                fontWeight: selectedKeyword ? "400" : "700",
-              }}
-            >
-              Όλα τα keywords
-            </Text>
-          </Pressable>
-
-          {availableKeywords.map((key) => {
-            const active = key === selectedKeyword;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => {
-                  setSelectedKeyword(key);
-                  setKeywordMenuOpen(false);
-                }}
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  backgroundColor: active ? "#ffe4ef" : "transparent",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: active ? colors.accentDark : colors.text,
-                    fontWeight: active ? "700" : "400",
-                  }}
-                >
-                  #{key}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.accent }}
-        edges={["top", "left", "right"]}
-      >
-        <StatusBar style="light" backgroundColor={colors.accent} />
-        <Header />
-        <KeywordFilterBar />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colors.bg,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ActivityIndicator color={colors.accent} />
-          <Text style={{ marginTop: 8, color: colors.subtext }}>
-            Φόρτωση αναμνήσεων...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.accent }}
       edges={["top", "left", "right"]}
     >
       <StatusBar style="light" backgroundColor={colors.accent} />
-      <Header />
-      <KeywordFilterBar />
 
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        {error && (
-          <Text style={{ color: "crimson", padding: 16 }}>{error}</Text>
+      {/* HEADER */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: colors.accent,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 999,
+            backgroundColor: "rgba(255,255,255,0.2)",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>←</Text>
+        </Pressable>
+
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "800",
+            color: "#fff",
+            letterSpacing: 0.5,
+          }}
+          numberOfLines={1}
+        >
+          Κοίτα που έχουμε πάει! 😍
+        </Text>
+
+        <View style={{ width: 20 }} />
+      </View>
+
+      {/* FILTER BAR (INLINE, not as nested component) */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 10,
+          backgroundColor: colors.accent,
+        }}
+      >
+        {/* keyword row */}
+        <View
+          style={{
+            borderRadius: 999,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <Text style={{ color: "#fff", marginRight: 6 }}>🏷️</Text>
+            <Text style={{ color: "#fff", fontSize: 13 }} numberOfLines={1}>
+              Keyword:
+              <Text style={{ fontWeight: "800" }}>
+                {" "}
+                {selectedKeyword ? `#${selectedKeyword}` : "Όλα"}
+              </Text>
+            </Text>
+          </View>
+
+          {availableKeywords.length > 0 && (
+            <Pressable
+              onPress={() => setKeywordMenuOpen((prev) => !prev)}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.9)",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: colors.accentDark,
+                }}
+              >
+                Επιλογή
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* ✅ SEARCH BAR (COPY/PASTE style from index) */}
+        <View
+          style={{
+            marginTop: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#F9FAFB",
+            borderRadius: 999,
+            paddingHorizontal: 14,
+          }}
+        >
+          <Text style={{ marginRight: 8 }}>🔍</Text>
+
+          <TextInput
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              if (!text.trim()) {
+                // optional: όταν αδειάζει, κλείσε dropdown & reset keyword
+                // setSelectedKeyword(null);
+                setKeywordMenuOpen(false);
+              }
+            }}
+            onFocus={() => {
+              if (keywordMenuOpen) setKeywordMenuOpen(false);
+            }}
+            placeholder="Ψάξε με τίτλο ή μέρος..."
+            placeholderTextColor={colors.subtext}
+            style={{
+              flex: 1,
+              paddingVertical: 10, // ίδιο “feel” με index (σταθερό, όχι conditional)
+              fontSize: 14,
+              color: colors.text,
+            }}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+
+          {(searchQuery.length > 0) && (
+            <Pressable
+              onPress={() => {
+                setSearchQuery("");
+                setKeywordMenuOpen(false);
+              }}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ fontSize: 16 }}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* dropdown keywords */}
+        {keywordMenuOpen && availableKeywords.length > 0 && (
+          <View
+            style={{
+              marginTop: 8,
+              borderRadius: 14,
+              backgroundColor: colors.card,
+              paddingVertical: 4,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                setSelectedKeyword(null);
+                setKeywordMenuOpen(false);
+              }}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: selectedKeyword ? colors.text : colors.accentDark,
+                  fontWeight: selectedKeyword ? "400" : "700",
+                }}
+              >
+                Όλα τα keywords
+              </Text>
+            </Pressable>
+
+            {availableKeywords.map((key) => {
+              const active = key === selectedKeyword;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => {
+                    setSelectedKeyword(key);
+                    setKeywordMenuOpen(false);
+                  }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: active ? "#ffe4ef" : "transparent",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: active ? colors.accentDark : colors.text,
+                      fontWeight: active ? "700" : "400",
+                    }}
+                  >
+                    #{key}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         )}
+      </View>
 
-        {filteredPosts.length === 0 ? (
+      {/* BODY */}
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {loading ? (
           <View
             style={{
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              padding: 16,
             }}
           >
-            <Text style={{ color: colors.subtext, textAlign: "center" }}>
-              Δεν βρέθηκαν αναμνήσεις
-              {selectedKeyword ? ` με keyword #${selectedKeyword}` : ""}
-              {searchQuery.trim() ? ` για "${searchQuery.trim()}" 😭` : "."}
+            <ActivityIndicator color={colors.accent} />
+            <Text style={{ marginTop: 8, color: colors.subtext }}>
+              Φόρτωση αναμνήσεων...
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={filteredPosts}
-            keyExtractor={(item) => item.id}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{
-              padding: 16,
-              paddingBottom: 40,
-            }}
-            renderItem={({ item }) => {
-              let thumbUrl: string | null = null;
+          <>
+            {error && (
+              <Text style={{ color: "crimson", padding: 16 }}>{error}</Text>
+            )}
 
-              if (item.cover_url) {
-                const path = item.cover_url.replace(/^\/+/, "");
-                thumbUrl = `${SUPABASE_URL}/storage/v1/object/public/photos/${path}`;
-              }
+            {filteredPosts.length === 0 ? (
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 16,
+                }}
+              >
+                <Text style={{ color: colors.subtext, textAlign: "center" }}>
+                  Δεν βρέθηκαν αναμνήσεις
+                  {selectedKeyword ? ` με keyword #${selectedKeyword}` : ""}
+                  {searchQuery.trim() ? ` για "${searchQuery.trim()}" 😭` : "."}
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredPosts}
+                keyExtractor={(item) => item.id}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+                renderItem={({ item }) => {
+                  let thumbUrl: string | null = null;
 
-              return (
-                <MemoryCard
-                  post={item}
-                  thumbUrl={thumbUrl}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/post/[id]",
-                      params: { id: item.id },
-                    })
+                  if (item.cover_url) {
+                    const path = item.cover_url.replace(/^\/+/, "");
+                    thumbUrl = `${SUPABASE_URL}/storage/v1/object/public/photos/${path}`;
                   }
-                />
-              );
-            }}
-          />
+
+                  return (
+                    <MemoryCard
+                      post={item}
+                      thumbUrl={thumbUrl}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/post/[id]",
+                          params: { id: item.id },
+                        })
+                      }
+                    />
+                  );
+                }}
+              />
+            )}
+          </>
         )}
       </View>
     </SafeAreaView>
